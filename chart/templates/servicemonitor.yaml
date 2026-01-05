@@ -1,0 +1,21 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "universal-app.fullname" . }}
+  namespace: {{ default .Release.Namespace .Values.namespace }}
+  labels:
+    {{- include "universal-app.labels" . | nindent 4 }}
+    # This label allows the Prometheus Operator to find this monitor
+    {{- with .Values.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "universal-app.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: {{ .Values.service.name | default "http" }}
+      path: {{ .Values.serviceMonitor.path }}
+      interval: {{ .Values.serviceMonitor.interval }}
+{{- end }}

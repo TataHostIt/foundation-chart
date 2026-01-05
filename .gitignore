@@ -1,0 +1,74 @@
+# ---------------------------------------------------------------------
+# HELM & KUBERNETES
+# ---------------------------------------------------------------------
+# Ignore packaged helm charts
+*.tgz
+*.tar.gz
+
+# Ignore local helm dependency builds (downloaded charts)
+# Keep the directory structure, but ignore the content if it's dynamically fetched
+charts/*/charts/
+charts/*/tmpcharts/
+
+# Ignore custom local values that contain sensitive data or testing overrides
+values-local.yaml
+values-secret.yaml
+secrets.yaml
+*.secret.yaml
+
+# ---------------------------------------------------------------------
+# SECRETS & SECURITY (Critical for GitOps)
+# ---------------------------------------------------------------------
+# Block generic secret files to prevent accidents
+*.env
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+id_rsa
+id_rsa.pub
+
+# Block kubeconfig files
+*.kubeconfig
+config
+kubeconfig
+
+# NOTE: We DO want to commit SealedSecrets (e.g., sealed-secrets.yaml),
+# so we do NOT ignore *.yaml globally.
+
+# ---------------------------------------------------------------------
+# TERRAFORM (If you mix IaC in this repo)
+# ---------------------------------------------------------------------
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+*.tfplan
+.terraform.lock.hcl
+# Keep the lock file if you want reproducible builds, ignore if you want auto-updates.
+# Standard is usually to COMMIT the lock file, but uncomment above if you prefer ignoring it.
+
+# ---------------------------------------------------------------------
+# IDE & OS
+# ---------------------------------------------------------------------
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# IntelliJ / JetBrains
+.idea/
+*.iml
+
+# ---------------------------------------------------------------------
+# LOGS & TEMP
+# ---------------------------------------------------------------------
+*.log
+tmp/
+temp/
