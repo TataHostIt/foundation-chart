@@ -152,3 +152,12 @@ tolerations: []
 affinity: {}
 volumes: []
 volumeMounts: []
+
+infisical:
+  enabled: false
+  projectId: ""      # Pass from app-specific values.yaml
+  folders: []        # e.g., ["common", "db"]
+  secretName: "infisical-creds"
+  mountPath: "/app/secrets"
+  fileName: "app.env"
+  image: "infisical/confg-operator:latest"

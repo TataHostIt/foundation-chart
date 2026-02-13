@@ -29,10 +29,48 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
 
-      {{- with .Values.initContainers }}
       initContainers:
+        # --- INFISICAL SECRET FETCHING ---
+        {{- if .Values.infisical.enabled }}
+        - name: fetch-infisical-secrets
+          image: {{ .Values.infisical.image | default "infisical/confg-operator:latest" }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Authenticating with Machine Identity..."
+              export INFISICAL_TOKEN=$(infisical login --method=universal-auth --client-id=$MACHINE_IDENTITY_ID --client-secret=$CLIENT_SECRET --plain --silent)
+              
+              # Using .Values.environment to target the specific Infisical environment
+              echo "Fetching secrets for Project: {{ .Values.infisical.projectId }} [Env: {{ .Values.environment }}]"
+              touch /shared/{{ .Values.infisical.fileName | default "app.env" }}
+              
+              {{- range .Values.infisical.folders }}
+              echo "Exporting: /{{ . }}"
+              # Added --env flag mapped to your Helm environment variable
+              infisical export --path "/{{ . }}" \
+                               --projectId="{{ $.Values.infisical.projectId }}" \
+                               --env="{{ $.Values.environment }}" \
+                               --format dotenv >> /shared/{{ $.Values.infisical.fileName | default "app.env" }}
+              {{- end }}
+          env:
+            - name: MACHINE_IDENTITY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.infisical.secretName | default "infisical-creds" }}
+                  key: identity-id
+            - name: CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.infisical.secretName | default "infisical-creds" }}
+                  key: client-secret
+          volumeMounts:
+            - name: infisical-shared-secrets
+              mountPath: /shared
+        {{- end }}
+        # --- END INFISICAL ---
+        {{- with .Values.initContainers }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
 
       containers:
         - name: {{ .Chart.Name }}
@@ -92,20 +130,30 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
 
-          {{- with .Values.volumeMounts }}
           volumeMounts:
+            # Inject Infisical secrets file into main app
+            {{- if .Values.infisical.enabled }}
+            - name: infisical-shared-secrets
+              mountPath: {{ .Values.infisical.mountPath | default "/app/secrets" }}
+              readOnly: true
+            {{- end }}
+            {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- end }}
 
       # Sidecars
       {{- with .Values.sidecars }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
 
-      {{- with .Values.volumes }}
       volumes:
+        {{- if .Values.infisical.enabled }}
+        - name: infisical-shared-secrets
+          emptyDir: {}
+        {{- end }}
+        {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
 
       {{- with .Values.nodeSelector }}
       nodeSelector:
