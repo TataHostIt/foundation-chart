@@ -31,22 +31,22 @@ spec:
 
       initContainers:
         # --- INFISICAL SECRET FETCHING ---
-        {{- if .Values.infisical.enabled }}
+        { { - if .Values.infisical.enabled } }
         - name: fetch-infisical-secrets
-          image: {{ .Values.infisical.image | default "infisical/config-operator:latest" }}
-          command: ["/bin/sh", "-c"]
+          image: { { .Values.infisical.image | default "infisical/config-operator:latest" } }
+          command: [ "/bin/sh", "-c" ]
           args:
             - |
+              set -e
               echo "Authenticating with Machine Identity..."
               export INFISICAL_TOKEN=$(infisical login --method=universal-auth --client-id=$MACHINE_IDENTITY_ID --client-secret=$CLIENT_SECRET --plain --silent)
               
-              # Using .Values.environment to target the specific Infisical environment
               echo "Fetching secrets for Project: {{ .Values.infisical.projectId }} [Env: {{ .Values.environment }}]"
-              touch /shared/{{ .Values.infisical.fileName | default "app.env" }}
+              # Initialize/Clear the file
+              cat /dev/null > /shared/{{ .Values.infisical.fileName | default "app.env" }}
               
               {{- range .Values.infisical.folders }}
               echo "Exporting: /{{ . }}"
-              # Added --env flag mapped to your Helm environment variable
               infisical export --path "/{{ . }}" \
                                --projectId="{{ $.Values.infisical.projectId }}" \
                                --env="{{ $.Values.environment }}" \
@@ -54,24 +54,23 @@ spec:
               {{- end }}
           env:
             - name: INFISICAL_API_URL
-              valueFrom:
-                secretKeyRef:
-                  name: { { .Values.infisical.secretName | default "infisical-creds" } }
-                  key: host-url
+              # Use the internal ClusterIP service address
+              value: { { .Values.infisical.host | default "http://infisical-infisical-standalone-infisical.infisical.svc.cluster.local:8080" | quote } }
             - name: MACHINE_IDENTITY_ID
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.infisical.secretName | default "infisical-creds" }}
+                  # FIXED: Removed the space between { {
+                  name: { { .Values.infisical.secretName | default "infisical-creds" } }
                   key: identity-id
             - name: CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.infisical.secretName | default "infisical-creds" }}
+                  name: { { .Values.infisical.secretName | default "infisical-creds" } }
                   key: client-secret
           volumeMounts:
             - name: infisical-shared-secrets
               mountPath: /shared
-        {{- end }}
+        { { - end } }
         # --- END INFISICAL ---
         {{- with .Values.initContainers }}
         {{- toYaml . | nindent 8 }}
