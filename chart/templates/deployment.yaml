@@ -33,7 +33,7 @@ spec:
         # --- INFISICAL SECRET FETCHING ---
         {{- if .Values.infisical.enabled }}
         - name: fetch-infisical-secrets
-          image: {{ .Values.infisical.image | default "infisical/config-operator:latest" }}
+          image: {{ .Values.infisical.image | default "infisical/cli:latest" }}
           command: ["/bin/sh", "-c"]
           args:
             - |

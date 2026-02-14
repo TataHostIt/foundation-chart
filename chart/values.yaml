@@ -160,4 +160,4 @@ infisical:
   secretName: "infisical-creds"
   mountPath: "/app/secrets"
   fileName: "app.env"
-  image: "infisical/config-operator:latest"
+  image: "infisical/cli:0.43.55"
